@@ -5,8 +5,7 @@ import {
   useNavigate,
   useRouterState,
 } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import { useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -17,10 +16,8 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 
 export const Route = createFileRoute("/_authenticated")({
-  ssr: false,
   component: AuthenticatedLayout,
 });
 
@@ -33,45 +30,16 @@ const navItems = [
 
 function AuthenticatedLayout() {
   const navigate = useNavigate();
-  const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
-  useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => {
-      setSession(s);
-      if (!s) navigate({ to: "/auth", search: { mode: "login" }, replace: true });
-    });
-    supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session);
-      if (!data.session) {
-        navigate({ to: "/auth", search: { mode: "login" }, replace: true });
-      }
-    });
-    return () => sub.subscription.unsubscribe();
-  }, [navigate]);
-
-  if (session === undefined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-      </div>
-    );
-  }
-  if (!session) return null;
-
-  const userName =
-    (session.user.user_metadata?.full_name as string | undefined) ??
-    session.user.email ??
-    "Usuário";
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    // Visual only — logout real será integrado na fase de backend
+    navigate({ to: "/auth", search: { mode: "login" }, replace: true });
   };
 
   return (
     <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 w-64 transform bg-sidebar text-sidebar-foreground transition-transform lg:static lg:translate-x-0 ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
@@ -119,7 +87,7 @@ function AuthenticatedLayout() {
 
         <div className="absolute inset-x-0 bottom-0 border-t border-sidebar-border p-3">
           <div className="mb-2 truncate px-3 py-2 text-xs text-sidebar-foreground/60">
-            {userName}
+            Usuário demo
           </div>
           <button
             onClick={handleLogout}
@@ -131,7 +99,6 @@ function AuthenticatedLayout() {
         </div>
       </aside>
 
-      {/* Backdrop */}
       {mobileOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 lg:hidden"
@@ -139,7 +106,6 @@ function AuthenticatedLayout() {
         />
       )}
 
-      {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur lg:px-8">
           <button
@@ -149,9 +115,7 @@ function AuthenticatedLayout() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="text-sm text-muted-foreground">
-            Painel de gestão
-          </div>
+          <div className="text-sm text-muted-foreground">Painel de gestão</div>
         </header>
         <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8">
           <Outlet />
