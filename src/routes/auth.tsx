@@ -1,8 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Wrench, Loader2 } from "lucide-react";
 import { z } from "zod";
-import { supabase } from "@/integrations/supabase/client";
 
 const searchSchema = z.object({
   mode: z.enum(["login", "signup"]).catch("login"),
@@ -45,33 +44,19 @@ const loginSchema = z.object({
 
 function AuthPage() {
   const { mode } = Route.useSearch();
-  const navigate = useNavigate();
-
-  // If already logged in, send to dashboard.
-  useEffect(() => {
-    let active = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (active && data.session) {
-        navigate({ to: "/dashboard", replace: true });
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [navigate]);
 
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Brand panel */}
       <div className="hidden bg-sidebar text-sidebar-foreground lg:flex lg:flex-col lg:justify-between lg:p-10">
-        <Link to="/" className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <Wrench className="h-5 w-5" />
           </div>
           <span className="text-lg font-bold">
             Motorápido <span className="text-primary">PLUS</span>
           </span>
-        </Link>
+        </div>
 
         <div className="max-w-md">
           <h2 className="text-3xl font-bold leading-tight">
@@ -157,12 +142,10 @@ function LoginForm() {
   const navigate = useNavigate();
   const [values, setValues] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitError, setSubmitError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError(null);
     const parsed = loginSchema.safeParse(values);
     if (!parsed.success) {
       const errs: Record<string, string> = {};
@@ -174,17 +157,11 @@ function LoginForm() {
     }
     setErrors({});
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: parsed.data.email,
-      password: parsed.data.password,
-    });
-    setLoading(false);
-    if (error) {
-      // Generic error for security
-      setSubmitError("E-mail ou senha inválidos.");
-      return;
-    }
-    navigate({ to: "/dashboard", replace: true });
+    // Visual only — autenticação real será integrada na fase de backend
+    setTimeout(() => {
+      setLoading(false);
+      navigate({ to: "/dashboard", replace: true });
+    }, 400);
   };
 
   return (
@@ -220,12 +197,6 @@ function LoginForm() {
         />
       </Field>
 
-      {submitError && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {submitError}
-        </div>
-      )}
-
       <button
         type="submit"
         disabled={loading}
@@ -258,11 +229,8 @@ function SignupForm() {
     confirm: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [submitInfo, setSubmitInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Real-time validation
   const validateField = (next: typeof values) => {
     const parsed = signupSchema.safeParse(next);
     if (parsed.success) {
@@ -285,34 +253,17 @@ function SignupForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitError(null);
-    setSubmitInfo(null);
     const parsed = signupSchema.safeParse(values);
     if (!parsed.success) {
       validateField(values);
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
-        data: { full_name: parsed.data.name },
-      },
-    });
-    setLoading(false);
-    if (error) {
-      setSubmitError("Não foi possível concluir o cadastro. Tente novamente.");
-      return;
-    }
-    if (data.session) {
+    // Visual only — cadastro real será integrado na fase de backend
+    setTimeout(() => {
+      setLoading(false);
       navigate({ to: "/dashboard", replace: true });
-    } else {
-      setSubmitInfo(
-        "Cadastro criado! Verifique seu e-mail para confirmar a conta.",
-      );
-    }
+    }, 400);
   };
 
   return (
@@ -367,17 +318,6 @@ function SignupForm() {
           placeholder="Repita a senha"
         />
       </Field>
-
-      {submitError && (
-        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {submitError}
-        </div>
-      )}
-      {submitInfo && (
-        <div className="rounded-md border border-success/30 bg-success/10 px-3 py-2 text-sm text-success">
-          {submitInfo}
-        </div>
-      )}
 
       <button
         type="submit"
